@@ -384,6 +384,15 @@ function assertObjectType (name: string, value: any, vm: ?Component) {
 /**
  * Merge two option objects into a new one.
  * Core utility used in both instantiation and inheritance.
+ * 
+ * 根据不同策略合并父子选项
+ * 
+ * strats.data: 递归遍历属性，并调用set
+ * strats[hook]: 子hook排在父hook数组末尾
+ * strats[type + 's']: Assets，父属性在原型，子属性在继承之后的对象
+ * strats.watch: 子watch排在父watch数组末尾
+ * strats.props/methods/inject/computed: 子属性覆盖父属性
+ * strats.provide: 与data相似
  */
 export function mergeOptions (
   parent: Object,

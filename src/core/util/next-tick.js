@@ -84,6 +84,10 @@ if (typeof Promise !== 'undefined' && isNative(Promise)) {
   }
 }
 
+/**
+ * 在将任务添加进任务列表，并且立即在下一个微任务/宏任务队列中执行
+ * 微任务/宏任务的选择根据环境支持决定
+ */
 export function nextTick (cb?: Function, ctx?: Object) {
   let _resolve
   callbacks.push(() => {
@@ -97,12 +101,21 @@ export function nextTick (cb?: Function, ctx?: Object) {
       _resolve(ctx)
     }
   })
+
+  /**
+   * 当第一个nextTick任务被添加（添加进任务队列）
+   * 则pending=true，并且调用timerFunc（下一次事件循环中执行flushCallbacks）
+   * 保证在flushCallbacks开始执行之前（执行时pending=false）
+   * 不会再次调用timerFunc
+   */
   if (!pending) {
     pending = true
     timerFunc()
   }
   // $flow-disable-line
   if (!cb && typeof Promise !== 'undefined') {
+    // 在支持Promise的环境中，返回Promise
+    // 以支持nextTick().then()的写法
     return new Promise(resolve => {
       _resolve = resolve
     })

@@ -246,6 +246,14 @@ function createComputedGetter (key) {
         watcher.evaluate()
       }
       if (Dep.target) {
+        /**
+         * 若有另外一个watcher依赖于此计算属性
+         * 则将此计算属性目前所收集的所有依赖项
+         * 让另一个watcher的也全部订阅
+         * 
+         * 那么当该计算属性更新时
+         * 另一个watcher也会进行计算
+         */
         watcher.depend()
       }
       return watcher.value

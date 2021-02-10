@@ -40,11 +40,16 @@ export class Observer {
   vmCount: number; // number of vms that have this object as root $data
 
   constructor (value: any) {
+    /**
+     * Observer的value为对象或者数组
+     * Observer内的dep实例，用于$set/$delete时手动通知订阅的watcher
+     */
     this.value = value
     this.dep = new Dep()
     this.vmCount = 0
     def(value, '__ob__', this)
     if (Array.isArray(value)) {
+      // 仅对此数组的方法进行修改，使其具有响应式属性
       if (hasProto) {
         protoAugment(value, arrayMethods)
       } else {
@@ -139,6 +144,10 @@ export function defineReactive (
   customSetter?: ?Function,
   shallow?: boolean
 ) {
+  /**
+   * 闭包内的dep实例
+   * 用于触发getter时收集依赖
+   */
   const dep = new Dep()
 
   const property = Object.getOwnPropertyDescriptor(obj, key)
@@ -153,6 +162,11 @@ export function defineReactive (
     val = obj[key]
   }
 
+  /**
+   * 如果属性的值是一个对象/数组
+   * 则递归调用observe
+   * 使子属性也变为响应式对象
+   */
   let childOb = !shallow && observe(val)
   Object.defineProperty(obj, key, {
     enumerable: true,
@@ -162,6 +176,13 @@ export function defineReactive (
       if (Dep.target) {
         dep.depend()
         if (childOb) {
+          /**
+           * 如果触发了访问此值的getter
+           * 并且属性的值是一个对象/数组
+           * 那么此值对应的Observer所持有的dep收集依赖
+           * 于是在调用$set为该对象/数组添加属性时
+           * 可以通过此dep通知订阅者触发更新
+           */
           childOb.dep.depend()
           if (Array.isArray(value)) {
             dependArray(value)
@@ -188,6 +209,7 @@ export function defineReactive (
         val = newVal
       }
       childOb = !shallow && observe(newVal)
+      // 通知订阅者
       dep.notify()
     }
   })

@@ -1,6 +1,6 @@
 /*!
  * Vue.js v2.6.12
- * (c) 2014-2020 Evan You
+ * (c) 2014-2021 Evan You
  * Released under the MIT License.
  */
 (function (global, factory) {
@@ -920,11 +920,16 @@
    * collect dependencies and dispatch updates.
    */
   var Observer = function Observer (value) {
+    /**
+     * Observer的value为对象或者数组
+     * Observer内的dep实例，用于$set/$delete时手动通知订阅的watcher
+     */
     this.value = value;
     this.dep = new Dep();
     this.vmCount = 0;
     def(value, '__ob__', this);
     if (Array.isArray(value)) {
+      // 仅对此数组的方法进行修改，使其具有响应式属性
       if (hasProto) {
         protoAugment(value, arrayMethods);
       } else {
@@ -1018,6 +1023,10 @@
     customSetter,
     shallow
   ) {
+    /**
+     * 闭包内的dep实例
+     * 用于触发getter时收集依赖
+     */
     var dep = new Dep();
 
     var property = Object.getOwnPropertyDescriptor(obj, key);
@@ -1032,6 +1041,11 @@
       val = obj[key];
     }
 
+    /**
+     * 如果属性的值是一个对象/数组
+     * 则递归调用observe
+     * 使子属性也变为响应式对象
+     */
     var childOb = !shallow && observe(val);
     Object.defineProperty(obj, key, {
       enumerable: true,
@@ -1041,6 +1055,13 @@
         if (Dep.target) {
           dep.depend();
           if (childOb) {
+            /**
+             * 如果触发了访问此值的getter
+             * 并且属性的值是一个对象/数组
+             * 那么此值对应的Observer所持有的dep收集依赖
+             * 于是在调用$set为该对象/数组添加属性时
+             * 可以通过此dep通知订阅者触发更新
+             */
             childOb.dep.depend();
             if (Array.isArray(value)) {
               dependArray(value);
@@ -1067,6 +1088,7 @@
           val = newVal;
         }
         childOb = !shallow && observe(newVal);
+        // 通知订阅者
         dep.notify();
       }
     });
@@ -1517,6 +1539,15 @@
   /**
    * Merge two option objects into a new one.
    * Core utility used in both instantiation and inheritance.
+   * 
+   * 根据不同策略合并父子选项
+   * 
+   * strats.data: 递归遍历属性，并调用set
+   * strats[hook]: 子hook排在父hook数组末尾
+   * strats[type + 's']: Assets，父属性在原型，子属性在继承之后的对象
+   * strats.watch: 子watch排在父watch数组末尾
+   * strats.props/methods/inject/computed: 子属性覆盖父属性
+   * strats.provide: 与data相似
    */
   function mergeOptions (
     parent,
@@ -1981,6 +2012,10 @@
     };
   }
 
+  /**
+   * 在将任务添加进任务列表，并且立即在下一个微任务/宏任务队列中执行
+   * 微任务/宏任务的选择根据环境支持决定
+   */
   function nextTick (cb, ctx) {
     var _resolve;
     callbacks.push(function () {
@@ -1994,12 +2029,21 @@
         _resolve(ctx);
       }
     });
+
+    /**
+     * 当第一个nextTick任务被添加（添加进任务队列）
+     * 则pending=true，并且调用timerFunc（下一次事件循环中执行flushCallbacks）
+     * 保证在flushCallbacks开始执行之前（执行时pending=false）
+     * 不会再次调用timerFunc
+     */
     if (!pending) {
       pending = true;
       timerFunc();
     }
     // $flow-disable-line
     if (!cb && typeof Promise !== 'undefined') {
+      // 在支持Promise的环境中，返回Promise
+      // 以支持nextTick().then()的写法
       return new Promise(function (resolve) {
         _resolve = resolve;
       })
@@ -4832,6 +4876,14 @@
           watcher.evaluate();
         }
         if (Dep.target) {
+          /**
+           * 若有另外一个watcher依赖于此计算属性
+           * 则将此计算属性目前所收集的所有依赖项
+           * 让另一个watcher的也全部订阅
+           * 
+           * 那么当该计算属性更新时
+           * 另一个watcher也会进行计算
+           */
           watcher.depend();
         }
         return watcher.value
@@ -5425,6 +5477,9 @@
     initAssetRegisters(Vue);
   }
 
+  /**
+   * 初始化Vue的全局API
+   */
   initGlobalAPI(Vue);
 
   Object.defineProperty(Vue.prototype, '$isServer', {

@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Vue.js example</title>
+    <script src="../../dist/vue.js"></script>
+  </head>
+  <body>
+    <div id="demo">
+      <div>{{parent.y ? 'has-p' : 'no-y'}}</div>
+      <div>{{parent.child.cx}}</div>
+    </div>
+
+    <!-- the demo root element -->
+    <ul id="demo">
+      <item class="item" :model="treeData"> </item>
+    </ul>
+
+    <!-- demo code -->
+    <script src="code-read.js"></script>
+  </body>
+</html>

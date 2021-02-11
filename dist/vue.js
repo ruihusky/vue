@@ -2262,6 +2262,7 @@
           cur = on[name] = createOnceHandler(event.name, cur, event.capture);
         }
         add(event.name, cur, event.capture, event.passive, event.params);
+        console.log('handle parent listener', cur, event);
       } else if (cur !== old) {
         old.fns = cur;
         on[name] = old;
@@ -2467,6 +2468,9 @@
 
   /*  */
 
+  /**
+   * 将provide选项的数据定义到vm._provided
+   */
   function initProvide (vm) {
     var provide = vm.$options.provide;
     if (provide) {
@@ -2475,7 +2479,11 @@
         : provide;
     }
   }
-
+  /**
+   * 从当前Vue实例开始，一直向父级直到根实例
+   * 在vm._provided中寻找inject
+   * 并定义其响应式对象到vm上
+   */
   function initInjections (vm) {
     var result = resolveInject(vm.$options.inject, vm);
     if (result) {
@@ -3532,6 +3540,11 @@
     var options = vm.$options;
     var parentVnode = vm.$vnode = options._parentVnode; // the placeholder node in parent tree
     var renderContext = parentVnode && parentVnode.context;
+    /**
+     * 对于Vue组件，它的_renderChildren中才可能有slots
+     * 此处将普通slot vNode转化成slot对象
+     * 供子组件使用
+     */
     vm.$slots = resolveSlots(options._renderChildren, renderContext);
     vm.$scopedSlots = emptyObject;
     // bind the createElement fn to this instance
@@ -3804,12 +3817,16 @@
 
   /*  */
 
+  /**
+   * 初始化实例的事件系统
+   */
   function initEvents (vm) {
     vm._events = Object.create(null);
     vm._hasHookEvent = false;
     // init parent attached events
     var listeners = vm.$options._parentListeners;
     if (listeners) {
+      // 父实例对子组件的事件监听，将事件回调函数注册到父实例
       updateComponentListeners(vm, listeners);
     }
   }
@@ -3950,12 +3967,17 @@
     }
   }
 
+  /**
+   * 初始化父子、祖先实例引用
+   * 初始化生命周期状态标识
+   */
   function initLifecycle (vm) {
     var options = vm.$options;
 
     // locate first non-abstract parent
     var parent = options.parent;
     if (parent && !options.abstract) {
+      // 找到最近的非抽象祖先Vue实例
       while (parent.$options.abstract && parent.$parent) {
         parent = parent.$parent;
       }
@@ -4676,6 +4698,9 @@
     Object.defineProperty(target, key, sharedPropertyDefinition);
   }
 
+  /**
+   * 依次初始化props、methods、data、computed、watch
+   */
   function initState (vm) {
     vm._watchers = [];
     var opts = vm.$options;
@@ -5032,6 +5057,13 @@
         // internal component options needs special treatment.
         initInternalComponent(vm, options);
       } else {
+        /**
+         * 1. resolveConstructorOptions(vm.constructor)：
+         * 从构造器中计算出options，例如：Vue.extend继承得到的子类构造器中的options
+         * 2. options：new Vue(options)时传入的选项
+         * 
+         * 将两者合并，就是实例初始化后的$options
+         */
         vm.$options = mergeOptions(
           resolveConstructorOptions(vm.constructor),
           options || {},
@@ -5048,6 +5080,11 @@
       initEvents(vm);
       initRender(vm);
       callHook(vm, 'beforeCreate');
+      /**
+       * 父组件总是比子组件先初始化
+       * 因此子组件调用initInjections时
+       * 父组件的_provided已经设置好了
+       */
       initInjections(vm); // resolve injections before data/props
       initState(vm);
       initProvide(vm); // resolve provide after data/props
@@ -5061,6 +5098,9 @@
       }
 
       if (vm.$options.el) {
+        /**
+         * $mount方法在不同平台中自行定义
+         */
         vm.$mount(vm.$options.el);
       }
     };
@@ -5070,6 +5110,10 @@
     var opts = vm.$options = Object.create(vm.constructor.options);
     // doing this because it's faster than dynamic enumeration.
     var parentVnode = options._parentVnode;
+    /**
+     * parent 组件的父Vue实例
+     * parentVnode 当前Vue组件实例所属的Vnode节点，也是$vnode属性
+     */
     opts.parent = options.parent;
     opts._parentVnode = parentVnode;
 
@@ -5127,9 +5171,14 @@
     ) {
       warn('Vue is a constructor and should be called with the `new` keyword');
     }
+    // _init方法从initMixin(Vue)注入
     this._init(options);
   }
 
+  /**
+   * 一系列Mixin方法
+   * 为Vue原型添加方法
+   */
   initMixin(Vue);
   stateMixin(Vue);
   eventsMixin(Vue);

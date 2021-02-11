@@ -45,6 +45,9 @@ export function proxy (target: Object, sourceKey: string, key: string) {
   Object.defineProperty(target, key, sharedPropertyDefinition)
 }
 
+/**
+ * 依次初始化props、methods、data、computed、watch
+ */
 export function initState (vm: Component) {
   vm._watchers = []
   const opts = vm.$options

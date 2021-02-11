@@ -22,6 +22,11 @@ export function initRender (vm: Component) {
   const options = vm.$options
   const parentVnode = vm.$vnode = options._parentVnode // the placeholder node in parent tree
   const renderContext = parentVnode && parentVnode.context
+  /**
+   * 对于Vue组件，它的_renderChildren中才可能有slots
+   * 此处将普通slot vNode转化成slot对象
+   * 供子组件使用
+   */
   vm.$slots = resolveSlots(options._renderChildren, renderContext)
   vm.$scopedSlots = emptyObject
   // bind the createElement fn to this instance
@@ -46,6 +51,10 @@ export function initRender (vm: Component) {
       !isUpdatingChildComponent && warn(`$listeners is readonly.`, vm)
     }, true)
   } else {
+    /**
+     * 从父vNode的data中，将attrs和listeners
+     * 绑定到当前Vue实例的$attrs、$listeners
+     */
     defineReactive(vm, '$attrs', parentData && parentData.attrs || emptyObject, null, true)
     defineReactive(vm, '$listeners', options._parentListeners || emptyObject, null, true)
   }

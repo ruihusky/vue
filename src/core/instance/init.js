@@ -35,6 +35,13 @@ export function initMixin (Vue: Class<Component>) {
       // internal component options needs special treatment.
       initInternalComponent(vm, options)
     } else {
+      /**
+       * 1. resolveConstructorOptions(vm.constructor)：
+       * 从构造器中计算出options，例如：Vue.extend继承得到的子类构造器中的options
+       * 2. options：new Vue(options)时传入的选项
+       * 
+       * 将两者合并，就是实例初始化后的$options
+       */
       vm.$options = mergeOptions(
         resolveConstructorOptions(vm.constructor),
         options || {},
@@ -53,6 +60,11 @@ export function initMixin (Vue: Class<Component>) {
     initEvents(vm)
     initRender(vm)
     callHook(vm, 'beforeCreate')
+    /**
+     * 父组件总是比子组件先初始化
+     * 因此子组件调用initInjections时
+     * 父组件的_provided已经设置好了
+     */
     initInjections(vm) // resolve injections before data/props
     initState(vm)
     initProvide(vm) // resolve provide after data/props
@@ -66,6 +78,9 @@ export function initMixin (Vue: Class<Component>) {
     }
 
     if (vm.$options.el) {
+      /**
+       * $mount方法在不同平台中自行定义
+       */
       vm.$mount(vm.$options.el)
     }
   }
@@ -75,6 +90,10 @@ export function initInternalComponent (vm: Component, options: InternalComponent
   const opts = vm.$options = Object.create(vm.constructor.options)
   // doing this because it's faster than dynamic enumeration.
   const parentVnode = options._parentVnode
+  /**
+   * parent 组件的父Vue实例
+   * parentVnode 当前Vue组件实例所属的Vnode节点，也是$vnode属性
+   */
   opts.parent = options.parent
   opts._parentVnode = parentVnode
 

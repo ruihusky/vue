@@ -6,9 +6,16 @@
     <script src="../../dist/vue.js"></script>
   </head>
   <body>
+    <!-- item template -->
+    <script type="text/x-template" id="child-component">
+      <div>child component</div>
+    </script>
+
     <div id="demo">
       <div>{{parent.y ? 'has-p' : 'no-y'}}</div>
       <div>{{parent.child.cx}}</div>
+
+      <child-component @child-event="handleChildEvent" />
     </div>
 
     <!-- the demo root element -->

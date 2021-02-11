@@ -81,6 +81,7 @@ export function updateListeners (
         cur = on[name] = createOnceHandler(event.name, cur, event.capture)
       }
       add(event.name, cur, event.capture, event.passive, event.params)
+      console.log('handle parent listener', cur, event)
     } else if (cur !== old) {
       old.fns = cur
       on[name] = old

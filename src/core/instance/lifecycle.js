@@ -29,12 +29,17 @@ export function setActiveInstance(vm: Component) {
   }
 }
 
+/**
+ * 初始化父子、祖先实例引用
+ * 初始化生命周期状态标识
+ */
 export function initLifecycle (vm: Component) {
   const options = vm.$options
 
   // locate first non-abstract parent
   let parent = options.parent
   if (parent && !options.abstract) {
+    // 找到最近的非抽象祖先Vue实例
     while (parent.$options.abstract && parent.$parent) {
       parent = parent.$parent
     }

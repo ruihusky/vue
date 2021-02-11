@@ -4,6 +4,9 @@ import { hasOwn } from 'shared/util'
 import { warn, hasSymbol } from '../util/index'
 import { defineReactive, toggleObserving } from '../observer/index'
 
+/**
+ * 将provide选项的数据定义到vm._provided
+ */
 export function initProvide (vm: Component) {
   const provide = vm.$options.provide
   if (provide) {
@@ -12,7 +15,11 @@ export function initProvide (vm: Component) {
       : provide
   }
 }
-
+/**
+ * 从当前Vue实例开始，一直向父级直到根实例
+ * 在vm._provided中寻找inject
+ * 并定义其响应式对象到vm上
+ */
 export function initInjections (vm: Component) {
   const result = resolveInject(vm.$options.inject, vm)
   if (result) {

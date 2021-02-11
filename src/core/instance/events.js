@@ -9,12 +9,16 @@ import {
 } from '../util/index'
 import { updateListeners } from '../vdom/helpers/index'
 
+/**
+ * 初始化实例的事件系统
+ */
 export function initEvents (vm: Component) {
   vm._events = Object.create(null)
   vm._hasHookEvent = false
   // init parent attached events
   const listeners = vm.$options._parentListeners
   if (listeners) {
+    // 父实例对子组件的事件监听，将事件回调函数注册到父实例
     updateComponentListeners(vm, listeners)
   }
 }

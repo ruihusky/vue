@@ -2262,7 +2262,6 @@
           cur = on[name] = createOnceHandler(event.name, cur, event.capture);
         }
         add(event.name, cur, event.capture, event.passive, event.params);
-        console.log('handle parent listener', cur, event);
       } else if (cur !== old) {
         old.fns = cur;
         on[name] = old;
@@ -3160,6 +3159,11 @@
 
   // inline hooks to be invoked on component VNodes during patch
   var componentVNodeHooks = {
+    /**
+     * patch时根据组件vnode初始化组件的方法
+     * 1. 创建vnode中的组件Vue实例并调用其$mount方法
+     * 2. 已经创建的组件调用prepatch进行更新
+     */
     init: function init (vnode, hydrating) {
       if (
         vnode.componentInstance &&
@@ -3189,7 +3193,9 @@
         options.children // new children
       );
     },
-
+    /**
+     * 组件被插入之后调用mounted或者activated钩子函数
+     */
     insert: function insert (vnode) {
       var context = vnode.context;
       var componentInstance = vnode.componentInstance;
@@ -3211,6 +3217,9 @@
       }
     },
 
+    /**
+     * 调用组件的$destroy方法，或者deactivate
+     */
     destroy: function destroy (vnode) {
       var componentInstance = vnode.componentInstance;
       if (!componentInstance._isDestroyed) {
@@ -3542,7 +3551,7 @@
     var renderContext = parentVnode && parentVnode.context;
     /**
      * 对于Vue组件，它的_renderChildren中才可能有slots
-     * 此处将普通slot vNode转化成slot对象
+     * 此处将普通slot vnode转化成slot对象
      * 供子组件使用
      */
     vm.$slots = resolveSlots(options._renderChildren, renderContext);
@@ -3586,7 +3595,11 @@
       var ref = vm.$options;
       var render = ref.render;
       var _parentVnode = ref._parentVnode;
-
+      
+      /**
+       * 从组件实例所挂载的vnode中找到$scopedSlots数据
+       * 返回渲染作用域插槽vnode的函数
+       */
       if (_parentVnode) {
         vm.$scopedSlots = normalizeScopedSlots(
           _parentVnode.data.scopedSlots,
@@ -3639,7 +3652,7 @@
         }
         vnode = createEmptyVNode();
       }
-      // set parent
+      // set parent 这里是维护vnode树的父子结构
       vnode.parent = _parentVnode;
       return vnode
     };
@@ -3998,6 +4011,23 @@
     vm._isBeingDestroyed = false;
   }
 
+  /**
+   * 定义了_update/$forceUpdate/$destroy方法
+   * _update实际执行了 __patch__ 方法
+   * __patch__ 是根据新老vnode结构更新实际dom的方法
+   * 在不同平台下自行定义
+   * 
+   * patch是一个递归的过程
+   * vnode -> createElm -> 创建子元素
+   *  如果是普通的子vnode
+   *    -> createElm
+   *  如果遇到组件类型的子vnode
+   *    -> createComponent 
+   *      -> 调用vnode的init方法初始化组件Vue实例
+   *      -> 组件Vue.$mount -> _render -> patch -> 开始构建组件的vnode tree
+   *      -> 构建vnode tree完成后调用patch构建实际dom(递归过程)
+   *      -> 如果是子孙节点，则vm.$el = 构建出的实际dom，并逐层向上插入到父级
+   */
   function lifecycleMixin (Vue) {
     Vue.prototype._update = function (vnode, hydrating) {
       var vm = this;
@@ -4009,7 +4039,9 @@
       // based on the rendering backend used.
       if (!prevVnode) {
         // initial render
+        console.log('vm.__patch__', vm.tag, vm.$el, vm);
         vm.$el = vm.__patch__(vm.$el, vnode, hydrating, false /* removeOnly */);
+        console.log('vm.__patch__ over', vm.tag, vm.$el, vm);
       } else {
         // updates
         vm.$el = vm.__patch__(prevVnode, vnode);
@@ -4024,6 +4056,7 @@
       }
       // if parent is an HOC, update its $el as well
       if (vm.$vnode && vm.$parent && vm.$vnode === vm.$parent._vnode) {
+        console.log('parent is HOC', vm.tag, vm.$parent.tag);
         vm.$parent.$el = vm.$el;
       }
       // updated hook is called by the scheduler to ensure that children are
@@ -4081,6 +4114,17 @@
     };
   }
 
+  /**
+   * 最终生成了一个渲染Watcher
+   * 执行updateComponent方法
+   * 也就是 vm._update(vm._render(), hydrating)
+   * vm._render 生成vnode树
+   * vm._update 是不同平台下的实际dom更新方法
+   * 
+   * 此方法中执行了beforeMount和mounted钩子函数
+   * 
+   * 更新时在Watcher执行函数前执行了beforeUpdate钩子函数
+   */
   function mountComponent (
     vm,
     el,
@@ -5868,6 +5912,12 @@
     }
   };
 
+  /**
+   * 注册ref
+   * 元素的attr中若有ref，会被解析到vnode.data.ref
+   * 将组件实例/元素本身注册到vm.$refs[vnode.data.ref]
+   * 对于for循环的ref，放置到数组中
+   */
   function registerRef (vnode, isRemoval) {
     var key = vnode.data.ref;
     if (!isDef(key)) { return }
@@ -6021,6 +6071,10 @@
       }
 
       vnode.isRootInsert = !nested; // for transition enter check
+
+      /**
+       * 如果vnode是一个组件
+       */
       if (createComponent(vnode, insertedVnodeQueue, parentElm, refElm)) {
         return
       }
@@ -6050,6 +6104,11 @@
 
         /* istanbul ignore if */
         {
+          /**
+           * 先创建子节点，递归调用 createElm
+           * 父节点先被创建，然后子节点被依次插入父节点
+           * 最后返回根节点
+           */
           createChildren(vnode, children, insertedVnodeQueue);
           if (isDef(data)) {
             invokeCreateHooks(vnode, insertedVnodeQueue);
@@ -6074,6 +6133,11 @@
       if (isDef(i)) {
         var isReactivated = isDef(vnode.componentInstance) && i.keepAlive;
         if (isDef(i = i.hook) && isDef(i = i.init)) {
+          /**
+           * 调用data.hook.init方法
+           * 创建组件Vue实例，并执行$mount方法
+           * 若有子结构，则递归调用，开启新的执行栈
+           */
           i(vnode, false /* hydrating */);
         }
         // after calling the init hook, if the vnode is a child component
@@ -6082,6 +6146,10 @@
         // in that case we can just return the element and be done.
         if (isDef(vnode.componentInstance)) {
           initComponent(vnode, insertedVnodeQueue);
+          /**
+           * vm.$el已经存在，但是未插入到实际的dom树
+           * 此处插入到父节点中
+           */
           insert(parentElm, vnode.elm, refElm);
           if (isTrue(isReactivated)) {
             reactivateComponent(vnode, insertedVnodeQueue, parentElm, refElm);
@@ -6092,6 +6160,10 @@
     }
 
     function initComponent (vnode, insertedVnodeQueue) {
+      /**
+       * vnode.data.pendingInsert
+       * 由子组件缓存到父vnode
+       */
       if (isDef(vnode.data.pendingInsert)) {
         insertedVnodeQueue.push.apply(insertedVnodeQueue, vnode.data.pendingInsert);
         vnode.data.pendingInsert = null;
@@ -6105,6 +6177,15 @@
         // skip all element-related modules except for ref (#3455)
         registerRef(vnode);
         // make sure to invoke the insert hook
+        /**
+         * 子组件被创建后，插入到当前执行栈的insertedVnodeQueue队列中
+         * 随后会被缓存到vnode.parent.data.pendingInsert
+         * 
+         * 回到父级执行栈时，会从vnode.data.pendingInsert取出
+         * 并插入到父级执行栈的insertedVnodeQueue
+         * 随后再将父级自身的vnode也加入到该insertedVnodeQueue
+         * 这样从子级到父级递归最终成为一个完整的insertedVnodeQueue
+         */
         insertedVnodeQueue.push(vnode);
       }
     }
@@ -6131,6 +6212,9 @@
       insert(parentElm, vnode.elm, refElm);
     }
 
+    /**
+     * 将元素插入到父节点
+     */
     function insert (parent, elm, ref$$1) {
       if (isDef(parent)) {
         if (isDef(ref$$1)) {
@@ -6163,6 +6247,11 @@
       return isDef(vnode.tag)
     }
 
+    /**
+     * 组件create动作结束后
+     * 调用create钩子/插入insert钩子到队列
+     * 因为是递归调用，所以总是子组件先执行此方法
+     */
     function invokeCreateHooks (vnode, insertedVnodeQueue) {
       for (var i$1 = 0; i$1 < cbs.create.length; ++i$1) {
         cbs.create[i$1](emptyNode, vnode);
@@ -6170,6 +6259,10 @@
       i = vnode.data.hook; // Reuse variable
       if (isDef(i)) {
         if (isDef(i.create)) { i.create(emptyNode, vnode); }
+        /**
+         * 组件的插入顺序是从子组件到父组件
+         * 因此子组件先被插入队列
+         */
         if (isDef(i.insert)) { insertedVnodeQueue.push(vnode); }
       }
     }
@@ -6439,8 +6532,10 @@
       // delay insert hooks for component root nodes, invoke them after the
       // element is really inserted
       if (isTrue(initial) && isDef(vnode.parent)) {
+        // 子组件创建完成后将当前的插入队列缓存到父vnode
         vnode.parent.data.pendingInsert = queue;
       } else {
+        // 递归回到根节点，开始按插入顺序触发insert中的钩子函数
         for (var i = 0; i < queue.length; ++i) {
           queue[i].data.hook.insert(queue[i]);
         }
@@ -6659,6 +6754,10 @@
         }
       }
 
+      /**
+       * isInitialPatch 根节点为false
+       * 递归调用的子组件为true
+       */
       invokeInsertHook(vnode, insertedVnodeQueue, isInitialPatch);
       return vnode.elm
     }

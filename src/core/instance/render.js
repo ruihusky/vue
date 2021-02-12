@@ -24,7 +24,7 @@ export function initRender (vm: Component) {
   const renderContext = parentVnode && parentVnode.context
   /**
    * 对于Vue组件，它的_renderChildren中才可能有slots
-   * 此处将普通slot vNode转化成slot对象
+   * 此处将普通slot vnode转化成slot对象
    * 供子组件使用
    */
   vm.$slots = resolveSlots(options._renderChildren, renderContext)
@@ -52,7 +52,7 @@ export function initRender (vm: Component) {
     }, true)
   } else {
     /**
-     * 从父vNode的data中，将attrs和listeners
+     * 从父vnode的data中，将attrs和listeners
      * 绑定到当前Vue实例的$attrs、$listeners
      */
     defineReactive(vm, '$attrs', parentData && parentData.attrs || emptyObject, null, true)
@@ -78,7 +78,11 @@ export function renderMixin (Vue: Class<Component>) {
   Vue.prototype._render = function (): VNode {
     const vm: Component = this
     const { render, _parentVnode } = vm.$options
-
+    
+    /**
+     * 从组件实例所挂载的vnode中找到$scopedSlots数据
+     * 返回渲染作用域插槽vnode的函数
+     */
     if (_parentVnode) {
       vm.$scopedSlots = normalizeScopedSlots(
         _parentVnode.data.scopedSlots,
@@ -131,7 +135,7 @@ export function renderMixin (Vue: Class<Component>) {
       }
       vnode = createEmptyVNode()
     }
-    // set parent
+    // set parent 这里是维护vnode树的父子结构
     vnode.parent = _parentVnode
     return vnode
   }

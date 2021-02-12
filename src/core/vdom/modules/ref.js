@@ -17,6 +17,12 @@ export default {
   }
 }
 
+/**
+ * 注册ref
+ * 元素的attr中若有ref，会被解析到vnode.data.ref
+ * 将组件实例/元素本身注册到vm.$refs[vnode.data.ref]
+ * 对于for循环的ref，放置到数组中
+ */
 export function registerRef (vnode: VNodeWithData, isRemoval: ?boolean) {
   const key = vnode.data.ref
   if (!isDef(key)) return

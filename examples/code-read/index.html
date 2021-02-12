@@ -7,21 +7,19 @@
   </head>
   <body>
     <!-- item template -->
-    <script type="text/x-template" id="child-component">
+    <script type="text/x-template" id="hoc-com">
+      <div class="hoc-wrap">
+        <c-com />
+      </div>
+    </script>
+
+    <script type="text/x-template" id="c-com">
       <div>child component</div>
     </script>
 
     <div id="demo">
-      <div>{{parent.y ? 'has-p' : 'no-y'}}</div>
-      <div>{{parent.child.cx}}</div>
-
-      <child-component @child-event="handleChildEvent" />
+      <hoc-com />
     </div>
-
-    <!-- the demo root element -->
-    <ul id="demo">
-      <item class="item" :model="treeData"> </item>
-    </ul>
 
     <!-- demo code -->
     <script src="code-read.js"></script>

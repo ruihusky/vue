@@ -34,6 +34,11 @@ import {
 
 // inline hooks to be invoked on component VNodes during patch
 const componentVNodeHooks = {
+  /**
+   * patch时根据组件vnode初始化组件的方法
+   * 1. 创建vnode中的组件Vue实例并调用其$mount方法
+   * 2. 已经创建的组件调用prepatch进行更新
+   */
   init (vnode: VNodeWithData, hydrating: boolean): ?boolean {
     if (
       vnode.componentInstance &&
@@ -63,7 +68,9 @@ const componentVNodeHooks = {
       options.children // new children
     )
   },
-
+  /**
+   * 组件被插入之后调用mounted或者activated钩子函数
+   */
   insert (vnode: MountedComponentVNode) {
     const { context, componentInstance } = vnode
     if (!componentInstance._isMounted) {
@@ -84,6 +91,9 @@ const componentVNodeHooks = {
     }
   },
 
+  /**
+   * 调用组件的$destroy方法，或者deactivate
+   */
   destroy (vnode: MountedComponentVNode) {
     const { componentInstance } = vnode
     if (!componentInstance._isDestroyed) {

@@ -60,6 +60,23 @@ export function initLifecycle (vm: Component) {
   vm._isBeingDestroyed = false
 }
 
+/**
+ * 定义了_update/$forceUpdate/$destroy方法
+ * _update实际执行了 __patch__ 方法
+ * __patch__ 是根据新老vnode结构更新实际dom的方法
+ * 在不同平台下自行定义
+ * 
+ * patch是一个递归的过程
+ * vnode -> createElm -> 创建子元素
+ *  如果是普通的子vnode
+ *    -> createElm
+ *  如果遇到组件类型的子vnode
+ *    -> createComponent 
+ *      -> 调用vnode的init方法初始化组件Vue实例
+ *      -> 组件Vue.$mount -> _render -> patch -> 开始构建组件的vnode tree
+ *      -> 构建vnode tree完成后调用patch构建实际dom(递归过程)
+ *      -> 如果是子孙节点，则vm.$el = 构建出的实际dom，并逐层向上插入到父级
+ */
 export function lifecycleMixin (Vue: Class<Component>) {
   Vue.prototype._update = function (vnode: VNode, hydrating?: boolean) {
     const vm: Component = this
@@ -71,7 +88,9 @@ export function lifecycleMixin (Vue: Class<Component>) {
     // based on the rendering backend used.
     if (!prevVnode) {
       // initial render
+      console.log('vm.__patch__', vm.tag, vm.$el, vm)
       vm.$el = vm.__patch__(vm.$el, vnode, hydrating, false /* removeOnly */)
+      console.log('vm.__patch__ over', vm.tag, vm.$el, vm)
     } else {
       // updates
       vm.$el = vm.__patch__(prevVnode, vnode)
@@ -86,6 +105,7 @@ export function lifecycleMixin (Vue: Class<Component>) {
     }
     // if parent is an HOC, update its $el as well
     if (vm.$vnode && vm.$parent && vm.$vnode === vm.$parent._vnode) {
+      console.log('parent is HOC', vm.tag, vm.$parent.tag)
       vm.$parent.$el = vm.$el
     }
     // updated hook is called by the scheduler to ensure that children are
@@ -143,6 +163,17 @@ export function lifecycleMixin (Vue: Class<Component>) {
   }
 }
 
+/**
+ * 最终生成了一个渲染Watcher
+ * 执行updateComponent方法
+ * 也就是 vm._update(vm._render(), hydrating)
+ * vm._render 生成vnode树
+ * vm._update 是不同平台下的实际dom更新方法
+ * 
+ * 此方法中执行了beforeMount和mounted钩子函数
+ * 
+ * 更新时在Watcher执行函数前执行了beforeUpdate钩子函数
+ */
 export function mountComponent (
   vm: Component,
   el: ?Element,

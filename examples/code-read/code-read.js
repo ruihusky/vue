@@ -1,44 +1,40 @@
 // boot up the demo
 // eslint-disable-next-line no-undef
-Vue.component('child-component', {
-  template: '#child-component',
+Vue.component("hoc-com", {
+  template: "#hoc-com",
+  name: "HocComponent",
+  data() {
+    return {
+      tag: "hoc-com",
+    };
+  },
   mounted() {
-    console.log('child mounted')
-    setTimeout(() => {
-      this.$emit('child-event')
-    });
-  }
-})
+    console.log("hoc mounted");
+  },
+});
+
+// eslint-disable-next-line no-undef
+Vue.component("c-com", {
+  template: "#c-com",
+  name: "ChildComponent",
+  data() {
+    return {
+      tag: "child-com",
+    };
+  },
+  mounted() {
+    console.log("child mounted");
+  },
+});
 
 // eslint-disable-next-line no-undef
 new Vue({
   el: "#demo",
-  data: {
-    parent: {
-      x: 1,
-      child: {
-        cx: 1,
-        cchild: {
-          ccx: 1,
-        },
-      },
-    },
+  data() {
+    return {};
   },
   mounted() {
-    console.log('root mounted', this)
-    setTimeout(() => {
-      console.log("=====now set y=====");
-      this.$set(this.parent, "y", "y");
-      setTimeout(() => {
-        console.log("=====now set ccy=====");
-        this.$set(this.parent.child.cchild, "ccy", "y");
-      }, 300);
-    }, 300);
+    console.log("root mounted", this);
   },
-  methods: {
-    handleChildEvent(e) {
-      console.log('child event handler', e)
-    }
-  }
+  methods: {},
 });
-

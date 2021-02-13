@@ -20,6 +20,7 @@ Vue.component("c-com", {
   data() {
     return {
       tag: "child-com",
+      list: [1,2,3]
     };
   },
   mounted() {

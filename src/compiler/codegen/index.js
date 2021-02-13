@@ -46,10 +46,13 @@ export function generate (
 ): CodegenResult {
   const state = new CodegenState(options)
   const code = ast ? genElement(ast, state) : '_c("div")'
-  return {
+  
+  const ret = {
     render: `with(this){return ${code}}`,
     staticRenderFns: state.staticRenderFns
   }
+  console.log('generate code ==>', ret)
+  return ret
 }
 
 export function genElement (el: ASTElement, state: CodegenState): string {

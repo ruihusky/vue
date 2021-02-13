@@ -11142,10 +11142,13 @@
   ) {
     var state = new CodegenState(options);
     var code = ast ? genElement(ast, state) : '_c("div")';
-    return {
+    
+    var ret = {
       render: ("with(this){return " + code + "}"),
       staticRenderFns: state.staticRenderFns
-    }
+    };
+    console.log('generate code ==>', ret);
+    return ret
   }
 
   function genElement (el, state) {
@@ -12037,7 +12040,9 @@
     template,
     options
   ) {
+    // 解析模板，生成AST树
     var ast = parse(template.trim(), options);
+    console.log('AST ==>', ast);
     if (options.optimize !== false) {
       optimize(ast, options);
     }

@@ -14,7 +14,13 @@
     </script>
 
     <script type="text/x-template" id="c-com">
-      <div>child component</div>
+      <div>
+        <div v-if="tag">child component</div>
+        <div v-else>no tag</div>
+        <div class="v-for-ast-demo">
+          <span v-for="(v, index) in list">{{v}} @index {{index}}</span>
+        </div>
+      </div>
     </script>
 
     <div id="demo">

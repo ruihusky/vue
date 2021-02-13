@@ -12,7 +12,9 @@ export const createCompiler = createCompilerCreator(function baseCompile (
   template: string,
   options: CompilerOptions
 ): CompiledResult {
+  // 解析模板，生成AST树
   const ast = parse(template.trim(), options)
+  console.log('AST ==>', ast)
   if (options.optimize !== false) {
     optimize(ast, options)
   }
